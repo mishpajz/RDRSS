@@ -8,12 +8,12 @@ Python script which takes torrent magnet links from RSS feed and feeds them to y
 
 ## Getting Started
 ### Prerequisites
-- Python
+- Python (3)
 - pip
 - Premium [real-debrid.com](https://real-debrid.com) account
 
 ### Install
-Run `pip install -e git+git://github.com/CaptainMishan/RDRSS.git#egg=rdrss` in your shell. 
+Run `pip install rdrss` in your shell. 
 
 ### Set up
 1. Run `rdrss.py --rss "<url to your feed>"` in your shell to specify feed with magnet links that should be added to real-debrid.
