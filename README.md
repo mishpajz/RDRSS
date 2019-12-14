@@ -25,7 +25,7 @@ Run `rdrss.py` in your shell to add magnets from new entries in feed to real-deb
 I recommend running this regularly, for example at startup, using Automator or using cron job.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE.md](/LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](/LICENSE.md) file for details
 
 ## Contributions
 All contributions are most welcome.
