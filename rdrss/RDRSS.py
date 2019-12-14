@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 import json
 import requests
@@ -165,6 +165,6 @@ elif args.token:
     set_token(args.token)
 elif args.magnet:
     if token_check():
-        add_to_rd(args.magnet)
+        add_magnet(args.magnet)
 else:
     ready_and_parse()
