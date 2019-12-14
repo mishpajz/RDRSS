@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='RDRSS',
-    version='0.1dev',
+    version='0.1',
     author='Michal Dobes',
     scripts=['rdrss/RDRSS.py'],
     install_requires=[
