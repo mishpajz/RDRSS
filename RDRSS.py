@@ -7,17 +7,17 @@ import datetime
 import time
 
 # VARIABLES
-rssUrl = ""
-_baseDateString = "2000-01-01 00:00:00"
-authToken = ""
+rss_url = ""
+auth_token = ""
+_base_date_string = "2000-01-01 00:00:00"
 
 # METHODS
-def readyAndParse():
-    if rssCheck():
-        parseFeed()
+def ready_and_parse():
+    if rss_check():
+        parse_feed()
 
-def parseFeed():
-    feed = feedparser.parse(rssUrl)
+def parse_feed():
+    feed = feedparser.parse(rss_url)
 
     with open('rss.json', 'r') as f:
         data = json.load(f)
@@ -25,49 +25,49 @@ def parseFeed():
             print("Fetch from RSS failed")
         else:
             added = True
-            if tokenCheck:
+            if token_check():
                 for entry in feed.entries:
-                    updatedDate = datetime.datetime.strptime(str(data["updated"]), '%Y-%m-%d %H:%M:%S').timetuple()
-                    if (entry.updated_parsed >= updatedDate):
+                    updated_date = datetime.datetime.strptime(str(data["updated"]), '%Y-%m-%d %H:%M:%S').timetuple()
+                    if (entry.updated_parsed >= updated_date):
                         if entry.id != str(data["id"]):
-                            if not addMagnet(entry.link):
+                            if not add_magnet(entry.link):
                                 added = False
             else:
                 added = False
             if added:
-                lastItem = feed.entries[0]
-                data["updated"] = time.strftime('%Y-%m-%d %H:%M:%S', lastItem.updated_parsed)
-                data["id"] = lastItem.id
+                last_item = feed.entries[0]
+                data["updated"] = time.strftime('%Y-%m-%d %H:%M:%S', last_item.updated_parsed)
+                data["id"] = last_item.id
                 with open('rss.json', 'w') as g:
                     json.dump(data, g, indent=4)
                     print("Successfully added RSS to RD")
             else:
                 print("Could not add RSS to RD")
 
-def setRSS(rss):
+def set_rss(rss):
     try:
-        jsonFile = open('rss.json', 'r+')
-        data = json.load(jsonFile)
+        json_file = open('rss.json', 'r+')
+        data = json.load(json_file)
         data["rssUrl"] = rss
         with open('rss.json', 'w') as g:
             json.dump(data, g, indent=4)
     except IOError:
-        with open('rss.json', 'w') as jsonFile:
+        with open('rss.json', 'w') as json_file:
             data = {}
             data["rssUrl"] = rss
-            data["updated"] = _baseDateString
+            data["updated"] = _base_date_string
             data["id"] = ""
             data["authToken"] = ""
-            json.dump(data, jsonFile, indent=4)
+            json.dump(data, json_file, indent=4)
     print("RSS url succesfully added")
 
-def rssCheck():
+def rss_check():
+    global rss_url
     try:
-        jsonFile = open('rss.json', 'r+')
-        data = json.load(jsonFile)
+        json_file = open('rss.json', 'r+')
+        data = json.load(json_file)
         if len(data["rssUrl"]) > 0:
-            global rssUrl
-            rssUrl = data["rssUrl"]
+            rss_url = data["rssUrl"]
             with open('rss.json', 'w') as g:
                 json.dump(data, g, indent=4)
             return True
@@ -75,18 +75,18 @@ def rssCheck():
             print("Missing rss url. To enter rssUrl, use --rss <value>")
             return False
     except IOError:
-        with open('rss.json', 'w') as jsonFile:
+        with open('rss.json', 'w') as json_file:
             data = {}
             data["rssUrl"] = ""
-            data["updated"] = _baseDateString
+            data["updated"] = _base_date_string
             data["id"] = ""
             data["authToken"] = ""
-            json.dump(data, jsonFile, indent=4)
+            json.dump(data, json_file, indent=4)
             print("Missing rss url. To enter rssUrl, use --rss <value>")
             return False
 
-def addMagnet(magnet):
-    headers = {"Authorization": "Bearer " + authToken}
+def add_magnet(magnet):
+    headers = {"Authorization": "Bearer " + auth_token}
     data = {"magnet": magnet, "host": "real-debrid.com"}
     result = requests.post("https://api.real-debrid.com/rest/1.0/torrents/addMagnet", headers = headers, data = data)
     if result.status_code == 400:
@@ -103,36 +103,36 @@ def addMagnet(magnet):
         return False
     else:
         id = result.json()["id"]
-        selectData = {"files": "all"}
-        selectUrl = "https://api.real-debrid.com/rest/1.0/torrents/selectFiles/" + id
-        selectResult = requests.post(selectUrl, headers = headers, data = selectData)
+        select_data = {"files": "all"}
+        select_url = "https://api.real-debrid.com/rest/1.0/torrents/selectFiles/" + id
+        select_result = requests.post(select_url, headers = headers, data = select_data)
         print("Added magnet to Real-Debrid.")
         return True
 
-def setToken(token):
+def set_token(token):
     try:
-        jsonFile = open('rss.json', 'r+')
-        data = json.load(jsonFile)
+        json_file = open('rss.json', 'r+')
+        data = json.load(json_file)
         data["authToken"] = token
         with open('rss.json', 'w') as g:
             json.dump(data, g, indent=4)
     except IOError:
-        with open('rss.json', 'w') as jsonFile:
+        with open('rss.json', 'w') as json_file:
             data = {}
             data["rssUrl"] = ""
-            data["updated"] = _baseDateString
+            data["updated"] = _base_date_string
             data["id"] = ""
             data["authToken"] = token
-            json.dump(data, jsonFile, indent=4)
+            json.dump(data, json_file, indent=4)
     print("Token succesfully added")
 
-def tokenCheck():
+def token_check():
+    global auth_token
     try:
-        jsonFile = open('rss.json', 'r+')
-        data = json.load(jsonFile)
+        json_file = open('rss.json', 'r+')
+        data = json.load(json_file)
         if len(data["authToken"]) > 0:
-            global authToken
-            authToken = data["authToken"]
+            auth_token = data["authToken"]
             with open('rss.json', 'w') as g:
                 json.dump(data, g, indent=4)
                 return True
@@ -140,13 +140,13 @@ def tokenCheck():
             print("Missing Real-Debrid auth token. To enter authToken, use --token <value>")
             return False
     except IOError:
-        with open('rss.json', 'w') as jsonFile:
+        with open('rss.json', 'w') as json_file:
             data = {}
             data["rssUrl"] = ""
-            data["updated"] = _baseDateString
+            data["updated"] = _base_date_string
             data["id"] = ""
             data["authToken"] = ""
-            json.dump(data, jsonFile, indent=4)
+            json.dump(data, json_file, indent=4)
             print("Missing Real-Debrid auth token. To enter authToken, use --token <value>")
             return False
             
@@ -158,10 +158,11 @@ parser.add_argument('-m', '--magnet', type=str, help='add magnet to RD')
 
 args = parser.parse_args()
 if args.rss:
-    setRSS(args.rss)
+    set_rss(args.rss)
 elif args.token:
-    setToken(args.token)
+    set_token(args.token)
 elif args.magnet:
-    addToRD(args.magnet)
+    if token_check():
+        add_to_rd(args.magnet)
 else:
-    readyAndParse()
+    ready_and_parse()
