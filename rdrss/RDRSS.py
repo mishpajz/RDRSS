@@ -11,6 +11,7 @@ import time
 # VARIABLES
 rss_url = ""
 auth_token = ""
+_save_file_name = "rdrss.json"
 _base_date_string = "2000-01-01 00:00:00"
 
 # METHODS
@@ -21,7 +22,7 @@ def ready_and_parse():
 def parse_feed():
     feed = feedparser.parse(rss_url)
 
-    with open('rss.json', 'r') as f:
+    with open(_save_file_name, 'r') as f:
         data = json.load(f)
         if len(feed.entries) == 0:
             print("Fetch from RSS failed")
@@ -40,7 +41,7 @@ def parse_feed():
                 last_item = feed.entries[0]
                 data["updated"] = time.strftime('%Y-%m-%d %H:%M:%S', last_item.updated_parsed)
                 data["id"] = last_item.id
-                with open('rss.json', 'w') as g:
+                with open(_save_file_name, 'w') as g:
                     json.dump(data, g, indent=4)
                     print("Successfully added RSS to RD")
             else:
@@ -48,13 +49,13 @@ def parse_feed():
 
 def set_rss(rss):
     try:
-        json_file = open('rss.json', 'r+')
+        json_file = open(_save_file_name, 'r+')
         data = json.load(json_file)
         data["rssUrl"] = rss
-        with open('rss.json', 'w') as g:
+        with open(_save_file_name, 'w') as g:
             json.dump(data, g, indent=4)
     except IOError:
-        with open('rss.json', 'w') as json_file:
+        with open(_save_file_name, 'w') as json_file:
             data = {}
             data["rssUrl"] = rss
             data["updated"] = _base_date_string
@@ -66,18 +67,18 @@ def set_rss(rss):
 def rss_check():
     global rss_url
     try:
-        json_file = open('rss.json', 'r+')
+        json_file = open(_save_file_name, 'r+')
         data = json.load(json_file)
         if len(data["rssUrl"]) > 0:
             rss_url = data["rssUrl"]
-            with open('rss.json', 'w') as g:
+            with open(_save_file_name, 'w') as g:
                 json.dump(data, g, indent=4)
             return True
         else:
             print("Missing rss url. To enter rssUrl, use --rss <value>")
             return False
     except IOError:
-        with open('rss.json', 'w') as json_file:
+        with open(_save_file_name, 'w') as json_file:
             data = {}
             data["rssUrl"] = ""
             data["updated"] = _base_date_string
@@ -113,13 +114,13 @@ def add_magnet(magnet):
 
 def set_token(token):
     try:
-        json_file = open('rss.json', 'r+')
+        json_file = open(_save_file_name, 'r+')
         data = json.load(json_file)
         data["authToken"] = token
-        with open('rss.json', 'w') as g:
+        with open(_save_file_name, 'w') as g:
             json.dump(data, g, indent=4)
     except IOError:
-        with open('rss.json', 'w') as json_file:
+        with open(_save_file_name, 'w') as json_file:
             data = {}
             data["rssUrl"] = ""
             data["updated"] = _base_date_string
@@ -131,18 +132,18 @@ def set_token(token):
 def token_check():
     global auth_token
     try:
-        json_file = open('rss.json', 'r+')
+        json_file = open(_save_file_name, 'r+')
         data = json.load(json_file)
         if len(data["authToken"]) > 0:
             auth_token = data["authToken"]
-            with open('rss.json', 'w') as g:
+            with open(_save_file_name, 'w') as g:
                 json.dump(data, g, indent=4)
                 return True
         else:
             print("Missing Real-Debrid auth token. To enter authToken, use --token <value>")
             return False
     except IOError:
-        with open('rss.json', 'w') as json_file:
+        with open(_save_file_name, 'w') as json_file:
             data = {}
             data["rssUrl"] = ""
             data["updated"] = _base_date_string
