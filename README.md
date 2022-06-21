@@ -13,23 +13,27 @@ Python script which takes torrent magnet links from RSS feed and feeds them to y
 - Premium [real-debrid.com](https://real-debrid.com) account
 
 ### Install
-Run 
+Install the required packages.
 ```
-pip3 install requests
-pip3 install feedparser
-pip3 install argparse
+pip install -r requirements.txt
 ``` 
-in your shell. 
+
 Then download [the latest release](https://github.com/CaptainMishan/RDRSS/releases/latest) and save the python file somewhere accessible.
 
 ### Set up
-1. Run `RDRSS.py --rss "<url to your feed>"` in your shell to specify feed with magnet links that should be added to real-debrid.
+1. Run `RDRSS.py --rss "<url to your feed>"` to specify RSS feed with magnet links (in link tag of RSS feed) that should be added to Real-Debrid.
 2. Obtain your [real-debrid api token here](https://real-debrid.com/apitoken)
-3. Run `RDRSS.py --token "<your real-debrid api token>"` in your shell to save your api token.
+3. Run `RDRSS.py --token "<your Real-Debrid api token>"` in your shell to save your api token.
+
+The script creates "rdrss.json" file, which contains:
+- stored token ("authToken" field)
+- stored RSS url ("rssUrl" field)
+- timestamp for last entry that was added to Real-Debrid ("updated" field) 
 
 ## Usage
-Run `RDRSS.py` in your shell to add magnets from new entries in feed to real-debrid.
-I recommend running this regularly, for example at startup, using Automator or using cron job.
+Run `RDRSS.py` to add magnets from new entries in feed to real-debrid.
+For help run `RDRSS.py -h`.
+I recommend running this regularly, for example at startup, using cron job or Automator.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](/LICENSE) file for details
