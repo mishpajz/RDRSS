@@ -25,7 +25,7 @@ Then download [the latest release](https://github.com/CaptainMishan/RDRSS/releas
 2. Obtain your [real-debrid api token here](https://real-debrid.com/apitoken)
 3. Run `RDRSS.py --token "<your Real-Debrid api token>"` in your shell to save your api token.
 
-The script creates "rdrss.json" file, which contains:
+The script creates "rdrss.json" save file, which contains:
 - stored token ("authToken" field)
 - stored RSS url ("rssUrl" field)
 - timestamp for last entry that was added to Real-Debrid ("updated" field) 
@@ -33,7 +33,7 @@ The script creates "rdrss.json" file, which contains:
 ## Usage
 Run `RDRSS.py` to add magnets from new entries in feed to real-debrid.
 For help run `RDRSS.py -h`.
-I recommend running this regularly, for example at startup, using cron job or Automator.
+It is recommended to run this regularly, for example at startup, using cron job or Automator.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](/LICENSE) file for details
