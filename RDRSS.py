@@ -97,18 +97,19 @@ def add_magnet(magnet):
     headers = {"Authorization": "Bearer " + auth_token}
     data = {"magnet": magnet, "host": "real-debrid.com"}
     result = requests.post("https://api.real-debrid.com/rest/1.0/torrents/addMagnet", headers = headers, data = data)
-    if result.status_code == 400:
-        print("Failed adding magnet to RD")
-        return False
-    elif result.status_code == 401:
-        print("Failed adding magnet to RD: Invalid token, to enter authToken, use --token <value>")
-        return False
-    elif result.status_code == 402:
-        print("Failed adding magnet to RD: User not premium")
-        return False
-    elif result.status_code == 503:
-        print("Failed adding magnet to RD: Service not available")
-        return False
+    if result.status_code != 200:
+        if result.status_code == 401:
+            print("Failed adding magnet to RD: Invalid token, to enter authToken, use --token <value>.")
+            return False
+        elif result.status_code == 402:
+            print("Failed adding magnet to RD: User not premium.")
+            return False
+        elif result.status_code == 503:
+            print("Failed adding magnet to RD: Service not available.")
+            return False
+        else:
+            print("Failed adding magnet to RD.")
+            return False
     else:
         id = result.json()["id"]
         select_data = {"files": "all"}
