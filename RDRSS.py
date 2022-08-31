@@ -150,7 +150,7 @@ def set_token(token):
         data = json.load(json_file)
         json_file.close()
     except:
-        data["rssUrl"] = ""
+        data["rssUrls"] = []
         data["updated"] = _base_date_string
 
     data["authToken"] = token
@@ -202,7 +202,10 @@ def add_rss(rss):
         data["authToken"] = ""
         data["updated"] = _base_date_string
 
-    data["rssUrl"].append(rss)
+    if ("rssUrls" not in data) or (len(data["rssUrls"]) == 0):
+        data["rssUrls"] = []
+
+    data["rssUrls"].append(rss)
 
     # Store data back into file
     try:
@@ -221,11 +224,14 @@ def list_rss():
         data = json.load(json_file)
         json_file.close()
 
-        if len(data["rssUrl"]) != 0:
-            c = 1
-            for rss in data["rssUrl"]:
-                print("[" + c + "] " + rss)
-            return
+        if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
+            print("RSS URLs stored:")
+            c = 0
+            for rss in data["rssUrls"]:
+                c += 1
+                print(" [" + str(c) + "] " + rss)
+            if (c > 0):
+                return
     except:
         pass
 
@@ -245,15 +251,15 @@ parser.add_argument('-m', '--magnet', type=str,
                     help='add magnet to Real-Debrid')
 
 args = parser.parse_args()
-if args.rss:
-    set_rss(args.rss)
-elif args.token:
+if args.token:
     set_token(args.token)
+elif args.listrss:
+    list_rss()
+elif args.addrss:
+    add_rss(args.addrss)
 elif args.magnet:
     if token_check():
         add_magnet(args.magnet)
-elif args.listrss:
-    list_rss()
 else:
     ready_and_parse()
 # !SECTION
