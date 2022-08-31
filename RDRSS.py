@@ -84,31 +84,30 @@ def ready_and_parse():
     c = 0
     for rss in urls:
         c += 1
-        print("(" + str(c) + "/" + len(urls) + ") " + rss)
-        parse_feed(rss)
+        print("(" + str(c) + "/" + str(len(urls)) + ") " + rss)
+        parse_feed(rss, last_updated_date)
 
-    data["updated"] = time.strftime('%Y-%m-%d %H:%M:%S', last_item.updated_parsed)
+    data["updated"] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     store_data()
 
 
 # Parse RSS feed into Real-Debrid
 #
-def parse_feed(rss_url: str, last_load_date: struct_time):
+def parse_feed(rss_url, last_load_date):
     feed = feedparser.parse(rss_url)
 
     # If feed is empty
     if len(feed.entries) == 0:
-        print("  Fetch from RSS failed")
+        print("Fetch from RSS failed.")
         return
 
     # For each entry in RSS feed that has not been added to Real-Debrid yet,
     # try to add magnet from each entry like this
     for entry in feed.entries:
         if (entry.updated_parsed > last_load_date):
-            if add_magnet(entry.link):
-                added = True
+            add_magnet(entry.link)
 
-    print("  Successfully fetched RSS to RD.")
+    print("Successfully fetched RSS to RD.")
 
 
 # Add magnet url into Real-Debrid using API
@@ -150,10 +149,12 @@ def add_magnet(magnet):
 #
 # @return array of urls
 #
-def get_rss() -> Iterable[str]:
+
+
+def get_rss():
     global data
 
-    if not load_data(True):
+    if load_data(True):
         if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
             return data["rssUrls"]
     return []
