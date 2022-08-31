@@ -23,16 +23,56 @@ _base_date_string = "2000-01-01 00:00:00"
 
 # Variables loaded from file
 auth_token = ""
+data = {}
 # !SECTION
 
 
 # SECTION: METHODS
 # 
 #
+
+def load_data(initializeIfNot: bool) -> bool:
+    global data
+    try:
+        json_file = open(_save_file_path, 'r+')
+        data = json.load(json_file)
+        json_file.close()
+        return True
+    except:
+        if initializeIfNot:
+            data["rssUrls"] = []
+            data["updated"] = _base_date_string
+            data["authToken"] = ""
+        return False
+
+
+def store_data() -> bool:
+    global data
+    try:
+        json_file = open(_save_file_path, 'w')
+        json.dump(data, json_file, indent=4)
+        json_file.close()
+        return True
+    except:
+        return False
+
 def ready_and_parse():
+    global data
+    
     # Check token
     if not (token_check()):
         return
+
+    # Load stored last updated time
+    last_updated_date = datetime.datetime.strptime(
+    str(_base_date_string), '%Y-%m-%d %H:%M:%S').timetuple()
+    if not load_data(True):
+        return
+    try:
+        last_updated_date = datetime.datetime.strptime(
+            str(data["updated"]), '%Y-%m-%d %H:%M:%S').timetuple()
+    except:
+        pass
 
     # Load urls
     urls = get_rss()
@@ -47,10 +87,13 @@ def ready_and_parse():
         print("(" + str(c) + "/" + len(urls) + ") " + rss)
         parse_feed(rss)
 
+    data["updated"] = time.strftime('%Y-%m-%d %H:%M:%S', last_item.updated_parsed)
+    store_data()
+
 
 # Parse RSS feed into Real-Debrid
 #
-def parse_feed(rss_url):
+def parse_feed(rss_url: str, last_load_date: struct_time):
     feed = feedparser.parse(rss_url)
 
     # If feed is empty
@@ -58,39 +101,13 @@ def parse_feed(rss_url):
         print("  Fetch from RSS failed")
         return
 
-    # Load stored last updated time
-    last_updated_date = datetime.datetime.strptime(
-        str(_base_date_string), '%Y-%m-%d %H:%M:%S').timetuple()
-    data = {}
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
-        last_updated_date = datetime.datetime.strptime(
-            str(data["updated"]), '%Y-%m-%d %H:%M:%S').timetuple()
-    except:
-        print("Corrupted save file (try removing " +
-              _save_file_name + " file and adding token and RSS urls again).")
-        return
-
     # For each entry in RSS feed that has not been added to Real-Debrid yet,
     # try to add magnet from each entry like this
-    added = False
     for entry in feed.entries:
-        if (entry.updated_parsed > last_updated_date):
+        if (entry.updated_parsed > last_load_date):
             if add_magnet(entry.link):
                 added = True
 
-    # If some entry has been added into Real-Debrid, try to change
-    # last updated date in save file
-    if not added:
-        return
-    last_item = feed.entries[0]
-    data["updated"] = time.strftime(
-        '%Y-%m-%d %H:%M:%S', last_item.updated_parsed)
-    json_file = open(_save_file_path, 'w')
-    json.dump(data, g, indent=4)
-    json_file.close()
     print("  Successfully fetched RSS to RD.")
 
 
@@ -134,16 +151,11 @@ def add_magnet(magnet):
 # @return array of urls
 #
 def get_rss() -> Iterable[str]:
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
+    global data
 
+    if not load_data(True):
         if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
             return data["rssUrls"]
-    except:
-        pass
-
     return []
 
 
@@ -152,24 +164,12 @@ def get_rss() -> Iterable[str]:
 #  @param token Real-Debrid user token
 #
 def set_token(token):
-    data = {}
-    # Try loading other data from file, else set default values
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
-    except:
-        data["rssUrls"] = []
-        data["updated"] = _base_date_string
+    global data
 
+    load_data(True)
     data["authToken"] = token
 
-    # Store data back into file
-    try:
-        json_file = open(_save_file_path, 'w')
-        json.dump(data, json_file, indent=4)
-        json_file.close()
-    except:
+    if not store_data():
         print("Couln't store token.")
         return
     print("Token succesfully added.")
@@ -179,16 +179,12 @@ def set_token(token):
 #
 def token_check() -> bool:
     global auth_token
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
+    global data
 
+    if load_data(True):
         if len(data["authToken"]) != 0:
             auth_token = data["authToken"]
             return True
-    except:
-        pass
 
     print(
         "Missing Real-Debrid authentication token. To enter auth token, use --token <value>")
@@ -199,27 +195,12 @@ def token_check() -> bool:
 #  @param rss Url to RSS feed
 #
 def add_rss(rss):
-    data = {}
-    # Try loading other data from file, else set default values
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
-    except:
-        data["authToken"] = ""
-        data["updated"] = _base_date_string
+    global data
 
-    if ("rssUrls" not in data) or (len(data["rssUrls"]) == 0):
-        data["rssUrls"] = []
-
+    load_data(True)
     data["rssUrls"].append(rss)
 
-    # Store data back into file
-    try:
-        json_file = open(_save_file_path, 'w')
-        json.dump(data, json_file, indent=4)
-        json_file.close()
-    except:
+    if not store_data():
         print("Couldn't store RSS url.")
         return
     print("RSS url succesfully added.")
@@ -227,11 +208,9 @@ def add_rss(rss):
 #  List stored RSS urls
 #
 def list_rss():
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
+    global data
 
+    if load_data(True):
         if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
             print("RSS urls stored:")
             c = 0
@@ -240,8 +219,6 @@ def list_rss():
                 print(" [" + str(c) + "] " + rss)
             if (c > 0):
                 return
-    except:
-        pass
 
     print("No RSS url added. To add RSS url, use --add <value>")
 
@@ -249,15 +226,10 @@ def list_rss():
 #
 #  @param n Index of url to remove
 def remove_rss(n):
-    data = {}
-    # Try loading other data from file, else set default values
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
-    except:
-        data["authToken"] = ""
-        data["updated"] = _base_date_string
+    global data
+
+    if not load_data(True):
+        print("Configuration file is empty.")
 
     if ("rssUrls" not in data) or (len(data["rssUrls"]) < n):
         print("No url at index " + str(n) + " found.")
@@ -266,11 +238,7 @@ def remove_rss(n):
     data["rssUrls"].pop(n-1)
 
     # Store data back into file
-    try:
-        json_file = open(_save_file_path, 'w')
-        json.dump(data, json_file, indent=4)
-        json_file.close()
-    except:
+    if not store_data():
         print("Couldn't remove RSS url.")
         return
     print("RSS url succesfully removed.")
