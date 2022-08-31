@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-## Python script for feeding magnet links from RSS feed into Real-Debrid
+# Python script for feeding magnet links from RSS feed into Real-Debrid
 
 import json
 import requests
@@ -28,7 +28,7 @@ auth_token = ""
 
 
 # SECTION: METHODS
-## Check if RSS and token is stored and try to parse RSS with magnets into Real-Debrid
+# Check if RSS and token is stored and try to parse RSS with magnets into Real-Debrid
 #
 def ready_and_parse():
     if not (rss_check() and token_check()):
@@ -36,7 +36,7 @@ def ready_and_parse():
     parse_feed()
 
 
-## Parse RSS feed into Real-Debrid
+# Parse RSS feed into Real-Debrid
 #
 def parse_feed():
     feed = feedparser.parse(rss_url)
@@ -82,7 +82,7 @@ def parse_feed():
     print("Successfully added RSS to RD")
 
 
-## Add magnet url into Real-Debrid using API
+# Add magnet url into Real-Debrid using API
 #
 #  @param magnet Url to magnet
 #
@@ -118,35 +118,7 @@ def add_magnet(magnet):
     return True
 
 
-## Store RSS url
-#
-#  @param rss Url to RSS feed
-#
-def set_rss(rss):
-    data = {}
-    # Try loading other data from file, else set default values
-    try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
-        json_file.close()
-    except:
-        data["authToken"] = ""
-        data["updated"] = _base_date_string
-
-    data["rssUrl"] = rss
-
-    # Store data back into file
-    try:
-        json_file = open(_save_file_path, 'w')
-        json.dump(data, json_file, indent=4)
-        json_file.close()
-    except:
-        print("Couldn't store RSS url.")
-        return
-    print("RSS url succesfully added.")
-
-
-## Check if RSS url is stored
+# Check if RSS url is stored
 #
 def rss_check():
     global rss_url
@@ -166,7 +138,7 @@ def rss_check():
     return False
 
 
-## Store Real-Debrid token
+# Store Real-Debrid token
 #
 #  @param token Real-Debrid user token
 #
@@ -194,7 +166,7 @@ def set_token(token):
     print("Token succesfully added")
 
 
-## Check if Real-Debrid token is stored
+# Check if Real-Debrid token is stored
 #
 def token_check() -> bool:
     global auth_token
@@ -212,15 +184,65 @@ def token_check() -> bool:
     print(
         "Missing Real-Debrid auth token. To enter authentication token, use --token <value>")
     return False
+
+# Store RSS url
+#
+#  @param rss Url to RSS feed
+#
+
+
+def add_rss(rss):
+    data = {}
+    # Try loading other data from file, else set default values
+    try:
+        json_file = open(_save_file_path, 'r+')
+        data = json.load(json_file)
+        json_file.close()
+    except:
+        data["authToken"] = ""
+        data["updated"] = _base_date_string
+
+    data["rssUrl"].append(rss)
+
+    # Store data back into file
+    try:
+        json_file = open(_save_file_path, 'w')
+        json.dump(data, json_file, indent=4)
+        json_file.close()
+    except:
+        print("Couldn't store RSS url.")
+        return
+    print("RSS url succesfully added.")
+
+
+def list_rss():
+    try:
+        json_file = open(_save_file_path, 'r+')
+        data = json.load(json_file)
+        json_file.close()
+
+        if len(data["rssUrl"]) != 0:
+            c = 1
+            for rss in data["rssUrl"]:
+                print("[" + c + "] " + rss)
+            return
+    except:
+        pass
+
+    print("No RSS urls set, add using --addrss")
+
 # !SECTION
 
 
 # SECTION: ARGUMENT PROCESSING
 parser = argparse.ArgumentParser(description='RSS feed to Real-Debrid.')
-parser.add_argument('-r', '--rss', type=str, help='set RSS url')
 parser.add_argument('-t', '--token', type=str,
                     help='set Real-Debrid token (acquire token at https://real-debrid.com/apitoken)')
-parser.add_argument('-m', '--magnet', type=str, help='add magnet to Real-Debrid')
+parser.add_argument('-l', '--listrss',
+                    help='list RSS URLs', action='store_true')
+parser.add_argument('-a', '--addrss', type=str, help='add RSS url')
+parser.add_argument('-m', '--magnet', type=str,
+                    help='add magnet to Real-Debrid')
 
 args = parser.parse_args()
 if args.rss:
@@ -230,6 +252,8 @@ elif args.token:
 elif args.magnet:
     if token_check():
         add_magnet(args.magnet)
+elif args.listrss:
+    list_rss()
 else:
     ready_and_parse()
 # !SECTION
