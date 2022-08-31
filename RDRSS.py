@@ -185,12 +185,10 @@ def token_check() -> bool:
         "Missing Real-Debrid auth token. To enter authentication token, use --token <value>")
     return False
 
-# Store RSS url
+#  Store RSS url
 #
 #  @param rss Url to RSS feed
 #
-
-
 def add_rss(rss):
     data = {}
     # Try loading other data from file, else set default values
@@ -217,7 +215,8 @@ def add_rss(rss):
         return
     print("RSS url succesfully added.")
 
-
+#  List stored RSS urls
+#
 def list_rss():
     try:
         json_file = open(_save_file_path, 'r+')
@@ -225,7 +224,7 @@ def list_rss():
         json_file.close()
 
         if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
-            print("RSS URLs stored:")
+            print("RSS urls stored:")
             c = 0
             for rss in data["rssUrls"]:
                 c += 1
@@ -237,6 +236,36 @@ def list_rss():
 
     print("No RSS urls set, add using --addrss")
 
+#  Remove stored RSS url number n
+#
+#  @param n Index of url to remove
+def remove_rss(n):
+    data = {}
+    # Try loading other data from file, else set default values
+    try:
+        json_file = open(_save_file_path, 'r+')
+        data = json.load(json_file)
+        json_file.close()
+    except:
+        data["authToken"] = ""
+        data["updated"] = _base_date_string
+
+    if ("rssUrls" not in data) or (len(data["rssUrls"]) < n):
+        print("No url at index " + str(n) + " found.")
+        return
+
+    data["rssUrls"].pop(n-1)
+
+    # Store data back into file
+    try:
+        json_file = open(_save_file_path, 'w')
+        json.dump(data, json_file, indent=4)
+        json_file.close()
+    except:
+        print("Couldn't remove RSS url.")
+        return
+    print("RSS url succesfully removed.")
+
 # !SECTION
 
 
@@ -244,19 +273,23 @@ def list_rss():
 parser = argparse.ArgumentParser(description='RSS feed to Real-Debrid.')
 parser.add_argument('-t', '--token', type=str,
                     help='set Real-Debrid token (acquire token at https://real-debrid.com/apitoken)')
-parser.add_argument('-l', '--listrss',
-                    help='list RSS URLs', action='store_true')
-parser.add_argument('-a', '--addrss', type=str, help='add RSS url')
+parser.add_argument('-l', '--list',
+                    help='list RSS urls', action='store_true')
+parser.add_argument('-a', '--add', type=str, help='add RSS url')
+parser.add_argument('-r', '--remove', type=int,
+                    help='remove RSS url at index (obtained using --list)')
 parser.add_argument('-m', '--magnet', type=str,
                     help='add magnet to Real-Debrid')
 
 args = parser.parse_args()
 if args.token:
     set_token(args.token)
-elif args.listrss:
+elif args.list:
     list_rss()
-elif args.addrss:
-    add_rss(args.addrss)
+elif args.add:
+    add_rss(args.add)
+elif args.remove:
+    remove_rss(args.remove)
 elif args.magnet:
     if token_check():
         add_magnet(args.magnet)
