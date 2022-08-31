@@ -30,15 +30,21 @@ auth_token = ""
 # 
 #
 def ready_and_parse():
+    # Check token
     if not (token_check()):
         return
 
+    # Load urls
     urls = get_rss()
-
     if len(urls) < 1:
         print("Missing RSS url. To add RSS url, use --add <value>")
+        return
 
+    # For each url print info and fetch to Real-Debrid
+    c = 0
     for rss in urls:
+        c += 1
+        print("(" + str(c) + "/" + len(urls) + ") " + rss)
         parse_feed(rss)
 
 
@@ -49,7 +55,7 @@ def parse_feed(rss_url):
 
     # If feed is empty
     if len(feed.entries) == 0:
-        print("Fetch from RSS failed")
+        print("  Fetch from RSS failed")
         return
 
     # Load stored last updated time
@@ -64,7 +70,7 @@ def parse_feed(rss_url):
             str(data["updated"]), '%Y-%m-%d %H:%M:%S').timetuple()
     except:
         print("Corrupted save file (try removing " +
-              _save_file_name + " file and adding token and RSS again)")
+              _save_file_name + " file and adding token and RSS urls again).")
         return
 
     # For each entry in RSS feed that has not been added to Real-Debrid yet,
@@ -85,7 +91,7 @@ def parse_feed(rss_url):
     json_file = open(_save_file_path, 'w')
     json.dump(data, g, indent=4)
     json_file.close()
-    print("Successfully added RSS to RD")
+    print("  Successfully fetched RSS to RD.")
 
 
 # Add magnet url into Real-Debrid using API
@@ -103,13 +109,13 @@ def add_magnet(magnet):
     if result.status_code != 201:
         if result.status_code == 401:
             print(
-                "Failed adding magnet to RD: Invalid token, to enter authentication token, use --token <value>.")
+                "  Failed adding magnet to RD: Invalid token, to enter authentication token, use --token <value>.")
         elif result.status_code == 402:
-            print("Failed adding magnet to RD: User not premium.")
+            print("  Failed adding magnet to RD: User not premium.")
         elif result.status_code == 503:
-            print("Failed adding magnet to RD: Service not available.")
+            print("  Failed adding magnet to RD: Service not available.")
         else:
-            print("Failed adding magnet to RD.")
+            print("  Failed adding magnet to RD.")
         return False
 
     # Try to select file in magnet on Real-Debrid
@@ -120,7 +126,7 @@ def add_magnet(magnet):
         requests.post(select_url, headers=headers, data=select_data)
     except:
         print("  Magnet couldn't be activated on Real-Debrid (requires manual activation).")
-    print("Added magnet to Real-Debrid.")
+    print("  Added magnet to Real-Debrid.")
     return True
 
 # Retrieve stored RSS url
@@ -164,9 +170,9 @@ def set_token(token):
         json.dump(data, json_file, indent=4)
         json_file.close()
     except:
-        print("Couln't store token")
+        print("Couln't store token.")
         return
-    print("Token succesfully added")
+    print("Token succesfully added.")
 
 
 # Check if Real-Debrid token is stored
