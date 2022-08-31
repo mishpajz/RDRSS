@@ -22,23 +22,29 @@ _save_file_path = os.path.join(__location__, _save_file_name)
 _base_date_string = "2000-01-01 00:00:00"
 
 # Variables loaded from file
-rss_url = ""
 auth_token = ""
 # !SECTION
 
 
 # SECTION: METHODS
-# Check if RSS and token is stored and try to parse RSS with magnets into Real-Debrid
+# 
 #
 def ready_and_parse():
-    if not (rss_check() and token_check()):
+    if not (token_check()):
         return
-    parse_feed()
+
+    urls = get_rss()
+
+    if len(urls) < 1:
+        print("Missing RSS url. To add RSS url, use --add <value>")
+
+    for rss in urls:
+        parse_feed(rss)
 
 
 # Parse RSS feed into Real-Debrid
 #
-def parse_feed():
+def parse_feed(rss_url):
     feed = feedparser.parse(rss_url)
 
     # If feed is empty
@@ -117,25 +123,22 @@ def add_magnet(magnet):
     print("Added magnet to Real-Debrid.")
     return True
 
-
-# Check if RSS url is stored
+# Retrieve stored RSS url
 #
-def rss_check():
-    global rss_url
+# @return array of urls
+#
+def get_rss() -> Iterable[str]:
     try:
         json_file = open(_save_file_path, 'r+')
         data = json.load(json_file)
         json_file.close()
 
-        if len(data["rssUrl"]) > 0:
-            rss_url = data["rssUrl"]
-            return True
+        if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
+            return data["rssUrls"]
     except:
         pass
 
-    print(
-        "Missing RSS url. To enter RSS url, use --rss <value>")
-    return False
+    return []
 
 
 # Store Real-Debrid token
@@ -182,7 +185,7 @@ def token_check() -> bool:
         pass
 
     print(
-        "Missing Real-Debrid auth token. To enter authentication token, use --token <value>")
+        "Missing Real-Debrid authentication token. To enter auth token, use --token <value>")
     return False
 
 #  Store RSS url
@@ -234,7 +237,7 @@ def list_rss():
     except:
         pass
 
-    print("No RSS urls set, add using --addrss")
+    print("No RSS url added. To add RSS url, use --add <value>")
 
 #  Remove stored RSS url number n
 #
