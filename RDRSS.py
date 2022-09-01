@@ -28,9 +28,13 @@ data = {}
 
 
 # SECTION: METHODS
-# 
-#
 
+
+#  Load data from config file into data variable
+#
+#  @param initializeIfNot Create empty boilerplate data if file didnt exist
+#
+#  @return bool File does exist
 def load_data(initializeIfNot: bool) -> bool:
     global data
     try:
@@ -45,7 +49,9 @@ def load_data(initializeIfNot: bool) -> bool:
             data["authToken"] = ""
         return False
 
-
+#  Store data to config file from data variable
+#
+#  @return bool Storing was successful
 def store_data() -> bool:
     global data
     try:
@@ -56,10 +62,11 @@ def store_data() -> bool:
     except:
         return False
 
+#  Try to parse RSS urls to Real-Debrid
 def ready_and_parse():
     global data
     
-    # Check token
+    # Check for token
     if not (token_check()):
         return
 
@@ -74,7 +81,7 @@ def ready_and_parse():
     except:
         pass
 
-    # Load urls
+    # Load stored urls
     urls = get_rss()
     if len(urls) < 1:
         print("Missing RSS url. To add RSS url, use --add <value>")
@@ -87,30 +94,32 @@ def ready_and_parse():
         print("(" + str(c) + "/" + str(len(urls)) + ") " + rss)
         parse_feed(rss, last_updated_date)
 
+    # Store now as last update time
     data["updated"] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     store_data()
 
 
-# Parse RSS feed into Real-Debrid
+#  Parse RSS feed into Real-Debrid
 #
+#  @param rss_url RSS feed url
+#  @param last_load_date Last date this feed was updated (when to fetch new entries from)
 def parse_feed(rss_url, last_load_date):
     feed = feedparser.parse(rss_url)
 
-    # If feed is empty
+    # If feed is empty return
     if len(feed.entries) == 0:
         print("Fetch from RSS failed.")
         return
 
-    # For each entry in RSS feed that has not been added to Real-Debrid yet,
-    # try to add magnet from each entry like this
+    # Try to add magnet from each entry that has not yet been added to Real-Debrid
+    # based on update time
     for entry in feed.entries:
         if (entry.updated_parsed > last_load_date):
             add_magnet(entry.link)
 
     print("Successfully fetched RSS to RD.")
 
-
-# Add magnet url into Real-Debrid using API
+#  Add magnet url into Real-Debrid using API
 #
 #  @param magnet Url to magnet
 #
@@ -145,12 +154,10 @@ def add_magnet(magnet):
     print("  Added magnet to Real-Debrid.")
     return True
 
-# Retrieve stored RSS url
+#  Retrieve stored RSS urls
 #
-# @return array of urls
+#  @return array of urls
 #
-
-
 def get_rss():
     global data
 
@@ -160,28 +167,33 @@ def get_rss():
     return []
 
 
-# Store Real-Debrid token
+#  Store Real-Debrid token
 #
 #  @param token Real-Debrid user token
 #
 def set_token(token):
     global data
 
+    # Load data and store token
     load_data(True)
     data["authToken"] = token
 
+    # Store data
     if not store_data():
-        print("Couln't store token.")
+        print("Couldn't store token.")
         return
     print("Token succesfully added.")
 
 
-# Check if Real-Debrid token is stored
+#  Check if Real-Debrid token is stored
+#
+#  @returns bool If true, token is stored
 #
 def token_check() -> bool:
     global auth_token
     global data
 
+    # Check if token is in loaded data
     if load_data(True):
         if len(data["authToken"]) != 0:
             auth_token = data["authToken"]
@@ -198,9 +210,11 @@ def token_check() -> bool:
 def add_rss(rss):
     global data
 
+    # Load data and add new rss
     load_data(True)
     data["rssUrls"].append(rss)
 
+    # Store data
     if not store_data():
         print("Couldn't store RSS url.")
         return
@@ -214,6 +228,8 @@ def list_rss():
     if load_data(True):
         if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
             print("RSS urls stored:")
+
+            # Loop through urls and print them numbered
             c = 0
             for rss in data["rssUrls"]:
                 c += 1
@@ -232,10 +248,12 @@ def remove_rss(n):
     if not load_data(True):
         print("Configuration file is empty.")
 
+    # Check if url at index exists
     if ("rssUrls" not in data) or (len(data["rssUrls"]) < n):
         print("No url at index " + str(n) + " found.")
         return
 
+    # Remove url from data
     data["rssUrls"].pop(n-1)
 
     # Store data back into file
