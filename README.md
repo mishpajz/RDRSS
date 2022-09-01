@@ -21,17 +21,23 @@ pip install -r requirements.txt
 Then download [the latest release](https://github.com/CaptainMishan/RDRSS/releases/latest) and save the python file somewhere accessible.
 
 ### Set up
-1. Run `RDRSS.py --rss "<url to your feed>"` to specify RSS feed with magnet links (in link tag of RSS feed) that should be added to Real-Debrid.
-2. Obtain your [real-debrid api token here](https://real-debrid.com/apitoken)
-3. Run `RDRSS.py --token "<your Real-Debrid api token>"` in your shell to save your api token.
+1. Obtain your [real-debrid api token here](https://real-debrid.com/apitoken)
+2. Run `RDRSS.py --token "<your Real-Debrid api token>"` in your shell to save your api token.
+
+#### Adding RSS feeds
+Run `RDRSS.py --add "<url to your feed>"` to add RSS feed with magnet links (in link tag of RSS feed) that should be added to Real-Debrid.
+
+#### Listing and removing RSSS feeds
+- Run `RDRSS.py --list` to see stored RSS feeds and their indexes.
+- Run `RDRSS.py --remove <index>` to remove stored RSS feed.
 
 The script creates "rdrss.json" save file, which contains:
 - stored token ("authToken" field)
-- stored RSS url ("rssUrl" field)
+- stored RSS urls ("rssUrls" field)
 - timestamp for last entry that was added to Real-Debrid ("updated" field) 
 
 ## Usage
-Run `RDRSS.py` to add magnets from new entries in feed to real-debrid.
+Run `RDRSS.py` to add magnets from new entries in feeds to real-debrid.
 For help run `RDRSS.py -h`.
 It is recommended to run this regularly, for example at startup, using cron job or Automator.
 
