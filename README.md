@@ -7,18 +7,31 @@ Python script which takes torrent magnet links from RSS feed and feeds them to y
 - Saves all set up data.
 
 ## Getting Started
-### Prerequisites
+
+### Install
+
+Instalation is done native or using Docker container.
+
+#### Native
+
+##### Prerequisites
 - Python (3)
 - pip
 - Premium [real-debrid.com](https://real-debrid.com) account
 
-### Install
+##### Instructions
+
 Install the required packages.
 ```
 pip install -r requirements.txt
 ``` 
 
 Then download [the latest release](https://github.com/CaptainMishan/RDRSS/releases/latest) and save the python file somewhere accessible.
+
+#### Docker
+
+Download [the latest release](https://github.com/CaptainMishan/RDRSS/releases/latest).
+Build the Docker image from Dockerfile.
 
 ### Set up
 1. Obtain your [real-debrid api token here](https://real-debrid.com/apitoken)
