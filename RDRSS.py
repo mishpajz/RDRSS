@@ -16,7 +16,7 @@ __location__ = os.path.realpath(os.path.join(
     os.getcwd(), os.path.dirname(__file__)))
 
 # Save file information
-_save_file_name = "rdrss.json"
+_save_file_name = "RDRSSconfig/rdrss.json"
 _save_file_path = os.path.join(__location__, _save_file_name)
 
 _base_date_string = "2000-01-01 00:00:00"
@@ -55,6 +55,7 @@ def load_data(initializeIfNot: bool) -> bool:
 def store_data() -> bool:
     global data
     try:
+        os.makedirs(os.path.dirname(_save_file_path), exist_ok=True)
         json_file = open(_save_file_path, 'w')
         json.dump(data, json_file, indent=4)
         json_file.close()
