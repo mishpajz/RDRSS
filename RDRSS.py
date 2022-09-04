@@ -100,6 +100,9 @@ def ready_and_parse():
     data["updated"] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     store_data()
 
+    # Select files in Real-Debrid
+    select_files()
+
 
 #  Parse RSS feed into Real-Debrid
 #
@@ -142,35 +145,39 @@ def process_api_response(result) -> bool:
 #
 #  @param magnet Url to magnet
 #
-def add_magnet(magnet):
-    # HTML request header
-    headers = {"Authorization": "Bearer " + auth_token}
+#  @returns bool Magnet added successfully
+#
+def add_magnet(magnet) -> bool:
 
     # Add magnet to Real-Debrid and process response
-    data = {"magnet": magnet, "host": "real-debrid.com"}
+    requestData = {"magnet": magnet, "host": "real-debrid.com"}
     result = requests.post(
-        "https://api.real-debrid.com/rest/1.0/torrents/addMagnet", headers=headers, data=data)
-    if result.status_code != 201:
-        if result.status_code == 401:
-            print(
-                "  Failed adding magnet to RD: Invalid token, to enter authentication token, use --token <value>.")
-        elif result.status_code == 402:
-            print("  Failed adding magnet to RD: User not premium.")
-        elif result.status_code == 503:
-            print("  Failed adding magnet to RD: Service not available.")
-        else:
-            print("  Failed adding magnet to RD.")
+        "https://api.real-debrid.com/rest/1.0/torrents/addMagnet", headers=headers, data=requestData)
+    if not process_api_response(result):
         return False
 
-    # Try to select file in magnet on Real-Debrid
-    try:
-        id = result.json()["id"]
-        select_data = {"files": "all"}
-        select_url = "https://api.real-debrid.com/rest/1.0/torrents/selectFiles/" + id
-        requests.post(select_url, headers=headers, data=select_data)
-    except:
-        print("  Magnet couldn't be activated on Real-Debrid (requires manual activation).")
-    print("  Added magnet to Real-Debrid.")
+    return True
+
+#  Select files added into Real-Debrid using API
+#
+#  @returns bool Files selected successfully
+#
+def select_files() -> bool:
+    # Get files from Real-Debrid
+    result = requests.get(
+        "https://api.real-debrid.com/rest/1.0/torrents?limit=100", headers=headers)
+    if not process_api_response(result):
+        return False
+
+
+    # Select correct files
+    files = result.json()
+    for file in files:
+        if file["status"] == "waiting_files_selection":
+            result = requests.post("https://api.real-debrid.com/rest/1.0/selectFiles/" + file["id"], data={"files":"all"}, headers=headers)
+            if not process_api_response(result):
+                return False
+    
     return True
 
 #  Retrieve stored RSS urls
