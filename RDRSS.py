@@ -116,7 +116,7 @@ def parse_feed(rss_url, last_load_date):
 
     # If feed is empty return
     if len(feed.entries) == 0:
-        print("-> Fetch from RSS failed.")
+        print("-> Fetch from RSS failed. (RSS had no entries)")
         return
 
     # Try to add magnet from each entry that has not yet been added to Real-Debrid
@@ -189,6 +189,7 @@ def select_files() -> bool:
     result = requests.get(
         "https://api.real-debrid.com/rest/1.0/torrents?limit=100", headers=_headers)
     if not process_api_response(result):
+        print("-> Selecting files on RD failed.")
         return False
 
     # Select correct files
@@ -198,7 +199,10 @@ def select_files() -> bool:
             result = requests.post("https://api.real-debrid.com/rest/1.0/torrents/selectFiles/" +
                                    file["id"], data={"files": "all"}, headers=_headers)
             if not process_api_response(result):
+                print("--> File could not be selected.")
                 return False
+
+    print("-> Successfully selected files on RD.")
 
     return True
 
