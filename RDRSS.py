@@ -116,7 +116,7 @@ def parse_feed(rss_url, last_load_date):
 
     # If feed is empty return
     if len(feed.entries) == 0:
-        print(". Fetch from RSS failed.")
+        print("-> Fetch from RSS failed.")
         return
 
     # Try to add magnet from each entry that has not yet been added to Real-Debrid
@@ -125,27 +125,36 @@ def parse_feed(rss_url, last_load_date):
         if (entry.updated_parsed > last_load_date):
             add_magnet(entry.link)
 
-    print(". Successfully fetched RSS to RD.")
+    print("-> Successfully fetched RSS to RD.")
 
 
-def process_api_response(result) -> bool:
+def process_api_response(result, indent = 1) -> bool:
     """Process response codes from Real-Debrid api
 
-    @param result
+    @param result Recieved result
+    @param indent Requested indentation size
 
     @returns bool Response is ok
     """
 
     if not result.ok:
+
+        # Process error message indentation
+        indent_string = ""
+        for x in range(indent):
+            indent_string += "-"
+        if indent > 0:
+            indent_string += "> "
+
         if result.status_code == 401:
-            print(
-                ". Failed reaching RD: Invalid token, to enter authentication token, use --token <value>.")
+            print(indent_string +
+                  "Failed reaching RD: Invalid token, to enter authentication token, use --token <value>.")
         elif result.status_code == 402:
-            print(". Failed reaching RD: User not premium.")
+            print(indent_string + "Failed reaching RD: User not premium.")
         elif result.status_code == 503:
-            print(". Failed reaching RD: Service not available.")
+            print(indent_string + "Failed reaching RD: Service not available.")
         else:
-            print(". Failed reaching RD.")
+            print(indent_string + "Failed reaching RD.")
         return False
     return True
 
@@ -158,11 +167,13 @@ def add_magnet(magnet) -> bool:
     @returns bool Magnet added successfully
     """
 
+    print("--> Adding magnet: " + magnet)
+
     # Add magnet to Real-Debrid and process response
     request_data = {"magnet": magnet, "host": "real-debrid.com"}
     result = requests.post(
         "https://api.real-debrid.com/rest/1.0/torrents/addMagnet", headers=_headers, data=request_data)
-    if not process_api_response(result):
+    if not process_api_response(result, 3):
         return False
 
     return True
