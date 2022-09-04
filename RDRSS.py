@@ -24,6 +24,7 @@ _base_date_string = "2000-01-01 00:00:00"
 # Variables loaded from file
 auth_token = ""
 data = {}
+headers = {"Authorization": "Bearer " + auth_token}
 # !SECTION
 
 
@@ -120,6 +121,23 @@ def parse_feed(rss_url, last_load_date):
 
     print("Successfully fetched RSS to RD.")
 
+#  Process response codes from Real-Debrid api
+#
+#  @param result 
+def process_api_response(result) -> bool:
+    if result.status_code != 201 or result.status_code != 200:
+        if result.status_code == 401:
+            print(
+                "  Failed reaching RD: Invalid token, to enter authentication token, use --token <value>.")
+        elif result.status_code == 402:
+            print("  Failed reaching RD: User not premium.")
+        elif result.status_code == 503:
+            print("  Failed reaching RD: Service not available.")
+        else:
+            print("  Failed reaching RD.")
+        return False
+    return True
+
 #  Add magnet url into Real-Debrid using API
 #
 #  @param magnet Url to magnet
@@ -193,11 +211,13 @@ def set_token(token):
 def token_check() -> bool:
     global auth_token
     global data
+    global headers
 
     # Check if token is in loaded data
     if load_data(True):
         if len(data["authToken"]) != 0:
             auth_token = data["authToken"]
+            headers = {"Authorization": "Bearer " + auth_token}
             return True
 
     print(
