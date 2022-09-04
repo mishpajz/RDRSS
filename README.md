@@ -43,6 +43,7 @@ Run `RDRSS.py --add "<url to your feed>"` to add RSS feed with magnet links (in 
 #### Listing and removing RSSS feeds
 - Run `RDRSS.py --list` to see stored RSS feeds and their indexes.
 - Run `RDRSS.py --remove <index>` to remove stored RSS feed.
+- Run `RDRSS.py --select` to "select" added files on Real-Debrid.
 
 The script creates "./RDRSSconfig/rdrss.json" config file, which contains:
 - stored token ("authToken" field)
