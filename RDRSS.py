@@ -53,6 +53,8 @@ def load_data(initializeIfNot: bool) -> bool:
 #  Store data to config file from data variable
 #
 #  @return bool Storing was successful
+
+
 def store_data() -> bool:
     global data
     try:
@@ -65,16 +67,18 @@ def store_data() -> bool:
         return False
 
 #  Try to parse RSS urls to Real-Debrid
+
+
 def ready_and_parse():
     global data
-    
+
     # Check for token
     if not (token_check()):
         return
 
     # Load stored last updated time
     last_updated_date = datetime.datetime.strptime(
-    str(_base_date_string), '%Y-%m-%d %H:%M:%S').timetuple()
+        str(_base_date_string), '%Y-%m-%d %H:%M:%S').timetuple()
     if not load_data(True):
         return
     try:
@@ -126,9 +130,9 @@ def parse_feed(rss_url, last_load_date):
 
 #  Process response codes from Real-Debrid api
 #
-#  @param result 
+#  @param result
 def process_api_response(result) -> bool:
-    if result.status_code != 201 or result.status_code != 200:
+    if not result.ok:
         if result.status_code == 401:
             print(
                 "  Failed reaching RD: Invalid token, to enter authentication token, use --token <value>.")
@@ -148,7 +152,6 @@ def process_api_response(result) -> bool:
 #  @returns bool Magnet added successfully
 #
 def add_magnet(magnet) -> bool:
-
     # Add magnet to Real-Debrid and process response
     requestData = {"magnet": magnet, "host": "real-debrid.com"}
     result = requests.post(
@@ -169,15 +172,15 @@ def select_files() -> bool:
     if not process_api_response(result):
         return False
 
-
     # Select correct files
     files = result.json()
     for file in files:
         if file["status"] == "waiting_files_selection":
-            result = requests.post("https://api.real-debrid.com/rest/1.0/selectFiles/" + file["id"], data={"files":"all"}, headers=headers)
+            result = requests.post("https://api.real-debrid.com/rest/1.0/torrents/selectFiles/" +
+                                   file["id"], data={"files": "all"}, headers=headers)
             if not process_api_response(result):
                 return False
-    
+
     return True
 
 #  Retrieve stored RSS urls
@@ -304,6 +307,8 @@ parser.add_argument('-r', '--remove', type=int,
                     help='remove RSS url at index (obtained using --list)')
 parser.add_argument('-m', '--magnet', type=str,
                     help='add magnet to Real-Debrid')
+parser.add_argument('-s', '--select',
+                    help='select added files on Real-Debrid', action='store_true')
 
 args = parser.parse_args()
 if args.token:
@@ -317,6 +322,9 @@ elif args.remove:
 elif args.magnet:
     if token_check():
         add_magnet(args.magnet)
+elif args.select:
+    if token_check():
+        select_files()
 else:
     ready_and_parse()
 # !SECTION
