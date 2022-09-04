@@ -5,10 +5,8 @@
 import json
 import requests
 import feedparser
-import sys
 import argparse
 import datetime
-import time
 import os
 
 # SECTION: VARIABLES
@@ -16,71 +14,75 @@ __location__ = os.path.realpath(os.path.join(
     os.getcwd(), os.path.dirname(__file__)))
 
 # Save file information
-_save_file_name = "RDRSSconfig/rdrss.json"
-_save_file_path = os.path.join(__location__, _save_file_name)
+save_file_name = "RDRSSconfig/rdrss.json"
+save_file_path = os.path.join(__location__, save_file_name)
 
-_base_date_string = "2000-01-01 00:00:00"
+BASE_DATE_STRING = "2000-01-01 00:00:00"
 
 # Variables loaded from file
-auth_token = ""
-data = {}
+_auth_token = ""
+_data = {}
+_headers = {"Authorization": "Bearer " + _auth_token}
 # !SECTION
 
 
 # SECTION: METHODS
 
 
-#  Load data from config file into data variable
-#
-#  @param initializeIfNot Create empty boilerplate data if file didnt exist
-#
-#  @return bool File does exist
-def load_data(initializeIfNot: bool) -> bool:
-    global data
+def load_data(initialize_if_not: bool) -> bool:
+    """Load data from config file into data variable
+
+    @param initialize_if_not Create empty boilerplate data if file didnt exist
+
+    @return bool File does exist
+    """
+    global _data
     try:
-        json_file = open(_save_file_path, 'r+')
-        data = json.load(json_file)
+        json_file = open(save_file_path, "r+", encoding="utf-8")
+        _data = json.load(json_file)
         json_file.close()
         return True
-    except:
-        if initializeIfNot:
-            data["rssUrls"] = []
-            data["updated"] = _base_date_string
-            data["authToken"] = ""
+    except Exception:
+        if initialize_if_not:
+            _data["rssUrls"] = []
+            _data["updated"] = BASE_DATE_STRING
+            _data["authToken"] = ""
         return False
 
-#  Store data to config file from data variable
-#
-#  @return bool Storing was successful
+
 def store_data() -> bool:
-    global data
+    """Store data to config file from data variable
+
+    @return bool Storing was successful
+    """
+
     try:
-        os.makedirs(os.path.dirname(_save_file_path), exist_ok=True)
-        json_file = open(_save_file_path, 'w')
-        json.dump(data, json_file, indent=4)
+        os.makedirs(os.path.dirname(save_file_path), exist_ok=True)
+        json_file = open(save_file_path, "w", encoding="utf-8")
+        json.dump(_data, json_file, indent=4)
         json_file.close()
         return True
-    except:
+    except Exception:
         return False
 
-#  Try to parse RSS urls to Real-Debrid
+
 def ready_and_parse():
-    global data
-    
+    """Try to parse RSS urls to Real-Debrid """
+    global _data
+
     # Check for token
     if not (token_check()):
         return
 
     # Load stored last updated time
-    last_updated_date = datetime.datetime.strptime(
-    str(_base_date_string), '%Y-%m-%d %H:%M:%S').timetuple()
     if not load_data(True):
         return
     try:
         last_updated_date = datetime.datetime.strptime(
-            str(data["updated"]), '%Y-%m-%d %H:%M:%S').timetuple()
-    except:
-        pass
+            str(_data["updated"]), '%Y-%m-%d %H:%M:%S').timetuple()
+    except Exception:
+        last_updated_date = datetime.datetime.strptime(
+            str(BASE_DATE_STRING), '%Y-%m-%d %H:%M:%S').timetuple()
 
     # Load stored urls
     urls = get_rss()
@@ -89,27 +91,32 @@ def ready_and_parse():
         return
 
     # For each url print info and fetch to Real-Debrid
-    c = 0
+    x = 0
     for rss in urls:
-        c += 1
-        print("(" + str(c) + "/" + str(len(urls)) + ") " + rss)
+        x += 1
+        print("(" + str(x) + "/" + str(len(urls)) + ") " + rss)
         parse_feed(rss, last_updated_date)
 
     # Store now as last update time
-    data["updated"] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    _data["updated"] = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     store_data()
 
+    # Select files in Real-Debrid
+    select_files()
 
-#  Parse RSS feed into Real-Debrid
-#
-#  @param rss_url RSS feed url
-#  @param last_load_date Last date this feed was updated (when to fetch new entries from)
+
 def parse_feed(rss_url, last_load_date):
+    """Parse RSS feed into Real-Debrid
+
+    @param rss_url RSS feed url
+    @param last_load_date Last date this feed was updated (when to fetch new entries from)
+    """
+
     feed = feedparser.parse(rss_url)
 
     # If feed is empty return
     if len(feed.entries) == 0:
-        print("Fetch from RSS failed.")
+        print("-> Fetch from RSS failed. (RSS had no entries)")
         return
 
     # Try to add magnet from each entry that has not yet been added to Real-Debrid
@@ -118,66 +125,110 @@ def parse_feed(rss_url, last_load_date):
         if (entry.updated_parsed > last_load_date):
             add_magnet(entry.link)
 
-    print("Successfully fetched RSS to RD.")
+    print("-> Successfully fetched RSS to RD.")
 
-#  Add magnet url into Real-Debrid using API
-#
-#  @param magnet Url to magnet
-#
-def add_magnet(magnet):
-    # HTML request header
-    headers = {"Authorization": "Bearer " + auth_token}
 
-    # Add magnet to Real-Debrid and process response
-    data = {"magnet": magnet, "host": "real-debrid.com"}
-    result = requests.post(
-        "https://api.real-debrid.com/rest/1.0/torrents/addMagnet", headers=headers, data=data)
-    if result.status_code != 201:
+def process_api_response(result, indent = 1) -> bool:
+    """Process response codes from Real-Debrid api
+
+    @param result Recieved result
+    @param indent Requested indentation size
+
+    @returns bool Response is ok
+    """
+
+    if not result.ok:
+
+        # Process error message indentation
+        indent_string = ""
+        for x in range(indent):
+            indent_string += "-"
+        if indent > 0:
+            indent_string += "> "
+
         if result.status_code == 401:
-            print(
-                "  Failed adding magnet to RD: Invalid token, to enter authentication token, use --token <value>.")
+            print(indent_string +
+                  "Failed reaching RD: Invalid token, to enter authentication token, use --token <value>.")
         elif result.status_code == 402:
-            print("  Failed adding magnet to RD: User not premium.")
+            print(indent_string + "Failed reaching RD: User not premium.")
         elif result.status_code == 503:
-            print("  Failed adding magnet to RD: Service not available.")
+            print(indent_string + "Failed reaching RD: Service not available.")
         else:
-            print("  Failed adding magnet to RD.")
+            print(indent_string + "Failed reaching RD.")
         return False
-
-    # Try to select file in magnet on Real-Debrid
-    try:
-        id = result.json()["id"]
-        select_data = {"files": "all"}
-        select_url = "https://api.real-debrid.com/rest/1.0/torrents/selectFiles/" + id
-        requests.post(select_url, headers=headers, data=select_data)
-    except:
-        print("  Magnet couldn't be activated on Real-Debrid (requires manual activation).")
-    print("  Added magnet to Real-Debrid.")
     return True
 
-#  Retrieve stored RSS urls
-#
-#  @return array of urls
-#
+
+def add_magnet(magnet) -> bool:
+    """Add magnet url into Real-Debrid using API
+
+    @param magnet Url to magnet
+
+    @returns bool Magnet added successfully
+    """
+
+    print("--> Adding magnet: " + magnet)
+
+    # Add magnet to Real-Debrid and process response
+    request_data = {"magnet": magnet, "host": "real-debrid.com"}
+    result = requests.post(
+        "https://api.real-debrid.com/rest/1.0/torrents/addMagnet", headers=_headers, data=request_data)
+    if not process_api_response(result, 3):
+        return False
+
+    return True
+
+
+def select_files() -> bool:
+    """Select files added into Real-Debrid using API
+
+    @returns bool Files selected successfully
+    """
+
+    # Get files from Real-Debrid
+    result = requests.get(
+        "https://api.real-debrid.com/rest/1.0/torrents?limit=100", headers=_headers)
+    if not process_api_response(result):
+        print("-> Selecting files on RD failed.")
+        return False
+
+    # Select correct files
+    files = result.json()
+    for file in files:
+        if file["status"] == "waiting_files_selection":
+            result = requests.post("https://api.real-debrid.com/rest/1.0/torrents/selectFiles/" +
+                                   file["id"], data={"files": "all"}, headers=_headers)
+            if not process_api_response(result):
+                print("--> File could not be selected.")
+                return False
+
+    print("-> Successfully selected files on RD.")
+
+    return True
+
+
 def get_rss():
-    global data
+    """  Retrieve stored RSS urls
+
+    @return array of urls
+    """
 
     if load_data(True):
-        if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
-            return data["rssUrls"]
+        if ("rssUrls" in _data) and (len(_data["rssUrls"]) != 0):
+            return _data["rssUrls"]
     return []
 
 
-#  Store Real-Debrid token
-#
-#  @param token Real-Debrid user token
-#
 def set_token(token):
-    global data
+    """Store Real-Debrid token
+
+    @param token Real-Debrid user token
+    """
+    global _data
 
     # Load data and store token
     load_data(True)
-    data["authToken"] = token
+    _data["authToken"] = token
 
     # Store data
     if not store_data():
@@ -186,34 +237,38 @@ def set_token(token):
     print("Token succesfully added.")
 
 
-#  Check if Real-Debrid token is stored
-#
-#  @returns bool If true, token is stored
-#
 def token_check() -> bool:
-    global auth_token
-    global data
+    """Check if Real-Debrid token is stored
+
+    @returns bool If true, token is stored
+    """
+
+    global _auth_token
+    global _headers
 
     # Check if token is in loaded data
     if load_data(True):
-        if len(data["authToken"]) != 0:
-            auth_token = data["authToken"]
+        if len(_data["authToken"]) != 0:
+            _auth_token = _data["authToken"]
+            _headers = {"Authorization": "Bearer " + _auth_token}
             return True
 
     print(
         "Missing Real-Debrid authentication token. To enter auth token, use --token <value>")
     return False
 
-#  Store RSS url
-#
-#  @param rss Url to RSS feed
-#
+
 def add_rss(rss):
-    global data
+    """Store RSS url
+
+    param rss Url to RSS feed
+    """
+
+    global _data
 
     # Load data and add new rss
     load_data(True)
-    data["rssUrls"].append(rss)
+    _data["rssUrls"].append(rss)
 
     # Store data
     if not store_data():
@@ -221,41 +276,43 @@ def add_rss(rss):
         return
     print("RSS url succesfully added.")
 
-#  List stored RSS urls
-#
+
 def list_rss():
-    global data
+    """List stored RSS urls"""
 
     if load_data(True):
-        if ("rssUrls" in data) and (len(data["rssUrls"]) != 0):
+        if ("rssUrls" in _data) and (len(_data["rssUrls"]) != 0):
             print("RSS urls stored:")
 
             # Loop through urls and print them numbered
-            c = 0
-            for rss in data["rssUrls"]:
-                c += 1
-                print(" [" + str(c) + "] " + rss)
-            if (c > 0):
+            x = 0
+            for rss in _data["rssUrls"]:
+                x += 1
+                print(" [" + str(x) + "] " + rss)
+            if (x > 0):
                 return
 
     print("No RSS url added. To add RSS url, use --add <value>")
 
-#  Remove stored RSS url number n
-#
-#  @param n Index of url to remove
+
 def remove_rss(n):
-    global data
+    """Remove stored RSS url number n
+
+    @param n Index of url to remove
+    """
+
+    global _data
 
     if not load_data(True):
         print("Configuration file is empty.")
 
     # Check if url at index exists
-    if ("rssUrls" not in data) or (len(data["rssUrls"]) < n):
+    if ("rssUrls" not in _data) or (len(_data["rssUrls"]) < n):
         print("No url at index " + str(n) + " found.")
         return
 
     # Remove url from data
-    data["rssUrls"].pop(n-1)
+    _data["rssUrls"].pop(n-1)
 
     # Store data back into file
     if not store_data():
@@ -277,6 +334,8 @@ parser.add_argument('-r', '--remove', type=int,
                     help='remove RSS url at index (obtained using --list)')
 parser.add_argument('-m', '--magnet', type=str,
                     help='add magnet to Real-Debrid')
+parser.add_argument('-s', '--select',
+                    help='select added files on Real-Debrid', action='store_true')
 
 args = parser.parse_args()
 if args.token:
@@ -290,6 +349,9 @@ elif args.remove:
 elif args.magnet:
     if token_check():
         add_magnet(args.magnet)
+elif args.select:
+    if token_check():
+        select_files()
 else:
     ready_and_parse()
 # !SECTION
